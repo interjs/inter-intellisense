@@ -1,0 +1,22 @@
+{
+	
+	"compilerOptions": {
+		"target": "esnext",
+		"module": "NodeNext",
+		"moduleResolution": "NodeNext",
+		"noImplicitAny": true,
+		"noImplicitReturns": true,
+		"noUnusedParameters": true,
+		"strictBindCallApply": true,
+		"strictFunctionTypes": true,
+		"strictPropertyInitialization": true,
+		"strictNullChecks": true,
+		"outDir": "./out",
+	},
+
+	"files": ["./src/extension.ts"],
+	"include": [
+		"./types/ref.d.ts",
+	]
+	
+}

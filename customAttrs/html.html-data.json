@@ -1,0 +1,52 @@
+{
+    "version": 1.1,
+    "globalAttributes": [
+        {
+            "name": "_if",
+            "description":{
+                "kind": "plaintext",
+                "value": "This element will be rendered if its conditional property is set to true."
+            },
+            "references": [{
+                "name": "Read more about this",
+                "url": "https://interjs.github.io"
+            }]
+        },{
+            "name": "_elseIf",
+            "description": {
+                "kind": "plaintext",
+                "value": "This element will be rendered if its conditional property is set to true."
+            },
+            "references": [{
+                "name": "Read more about this",
+                "url": "https://interjs.github.io"
+            }]
+        },
+        {
+            "name": "_else",
+            "description": {
+                "kind": "plaintext",
+                "value": "If the previous element was not rendered, this one will be rendered."
+             },
+             "references": [{
+                "name": "Read more about this",
+                "url": "https://interjs.github.io"
+
+             }]
+
+            
+        },
+        {
+            "name": "_ifNot",
+            "description": {
+                "kind": "plaintext",
+                "value": "This is oposite to _if, this element will be rendered if the conditional property of this attribute is set false, it is the same to say: Render if not True."
+            },
+            "references": [{
+                "name": "Read more about this",
+                "url": "https://interjs.github.io"
+            }]
+        }
+    ]
+
+}
