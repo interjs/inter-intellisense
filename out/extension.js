@@ -28,7 +28,7 @@ const vscode = __importStar(require("vscode"));
 const extensionVersion = "1.0.0";
 function activate(context) {
     vscode.window.showInformationMessage(`
-	Inter HTML intellisense is now activated, Have a nice coding section!
+	Inter HTML intellisense is now activated, have a nice coding section!
 	`);
     const disp = vscode.commands.registerCommand("inter.version", () => {
         vscode.window.showInformationMessage(`You're using version ${extensionVersion} of the extension.`);

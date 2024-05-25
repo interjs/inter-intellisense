@@ -1,16 +1,24 @@
 {
   "name": "inter-intellisense",
   "description": "A vscode extension for Inter  HTML intellisense.",
+  "repository": {
+	  "type": "git",
+	  "url": "https://github.com/interjs/inter-intellisense.git"
+  },
   "module": "esnext",
   "version": "1.0.0",
   "engines": {
     "vscode": "^1.57.1"
   },
   "main": "./out/extension.js",
-  "publisher": "Interjs org",
+  "publisher": "Interjs",
   "displayName": "Interjs HTML intellisense",
   "license": "MIT",
   "icon": "./images/icon.png",
+  "categories": [
+      "Programming Languages",
+	  "Snippets"
+  ],
   "activationEvents": [
     "onLanguage:html"
   ],

@@ -4,7 +4,7 @@ const extensionVersion: string = "1.0.0";
 
 export function activate(context: vscode.ExtensionContext) {
   vscode.window.showInformationMessage(`
-	Inter HTML intellisense is now activated, Have a nice coding section!
+	Inter HTML intellisense is now activated, have a nice coding section!
 	`);
 
   const disp = vscode.commands.registerCommand("inter.version", () => {
