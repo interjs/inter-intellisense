@@ -9,7 +9,7 @@
             },
             "references": [{
                 "name": "Read more about this",
-                "url": "https://interjs.github.io"
+                "url": "https://interjs.github.io/v2/tutorial/pt/renderizacao-condicional/#atributo-_if"
             }]
         },{
             "name": "_elseIf",
@@ -19,7 +19,7 @@
             },
             "references": [{
                 "name": "Read more about this",
-                "url": "https://interjs.github.io"
+                "url": "https://interjs.github.io/v2/tutorial/pt/renderizacao-condicional/#atributo-_elseIf"
             }]
         },
         {
@@ -30,7 +30,7 @@
              },
              "references": [{
                 "name": "Read more about this",
-                "url": "https://interjs.github.io"
+                "url": "https://interjs.github.io/v2/tutorial/pt/renderizacao-condicional/#atributo-_else"
 
              }]
 
@@ -40,11 +40,11 @@
             "name": "_ifNot",
             "description": {
                 "kind": "plaintext",
-                "value": "This is oposite to _if, this element will be rendered if the conditional property of this attribute is set false, it is the same to say: Render if not True."
+                "value": "This is oposite to _if, this element will be rendered if the conditional property of this attribute is set to false, it is the same to say: Render if not True."
             },
             "references": [{
                 "name": "Read more about this",
-                "url": "https://interjs.github.io"
+                "url": "https://interjs.github.io/v2/tutorial/pt/renderizacao-condicional/#atributo-_ifNot"
             }]
         }
     ]

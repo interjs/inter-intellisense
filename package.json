@@ -1,40 +1,32 @@
 {
   "name": "inter-intellisense",
-  "description": "A vscode extension for Inter code completion",
+  "description": "A vscode extension for Inter  HTML intellisense.",
   "module": "esnext",
   "version": "1.0.0",
   "engines": {
-    "vscode": "1.79.2"
+    "vscode": "^1.57.1"
   },
   "main": "./out/extension.js",
   "publisher": "Interjs org",
-  "displayName": "Interjs",
+  "displayName": "Interjs HTML intellisense",
   "license": "MIT",
+  "icon": "./images/icon.png",
   "activationEvents": [
-    "onlanguage:javascript",
-    "onlanguage:html"
-  ], "contributes": {
+    "onLanguage:html"
+  ],
+   "contributes": {
     "commands": [
       {
         "command": "inter.version",
         "title": "Inter version"
-      },
-      {
-        "command": "inter.exit",
-        "title": "Inter deactivate"
       }
-    
     ],
 	"html": {
-	"customData": [ "./customAttrs/html.html-data.json"]
-	},
-	"languages": [{
-		"id": "javascript",
-		"extension": [".js", ".html"]
-	}]
-	
-  },
-  "types": "./types/ref.d.ts",
+		"customData": ["./customAttrs/html.html-data.json"]
+		
+	}
+
+   },
   
   "scripts": {
     "vscode:prepublish": "npm run compile",
@@ -42,8 +34,6 @@
     "watch": "tsc -watch -p ./"
   },
   "devDependencies": {
-    "eslint": "^9.2.0",
-    "typescript": "^5.4.5",
-    "vscode": "^1.1.37"
-  }
+    "typescript": "^5.4.5"
+}
 }

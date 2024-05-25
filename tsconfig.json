@@ -15,8 +15,5 @@
 	},
 
 	"files": ["./src/extension.ts"],
-	"include": [
-		"./types/ref.d.ts",
-	]
 	
 }
