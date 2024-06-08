@@ -3,6 +3,7 @@
 	"compilerOptions": {
 		"target": "esnext",
 		"module": "NodeNext",
+		"lib": ["ESNext", "DOM"],
 		"moduleResolution": "NodeNext",
 		"noImplicitAny": true,
 		"noImplicitReturns": true,
@@ -14,6 +15,6 @@
 		"outDir": "./out",
 	},
 
-	"files": ["./src/extension.ts"],
+	"files": ["./src/extension.ts", "./src/htmlCommentsParser.ts"],
 	
 }
