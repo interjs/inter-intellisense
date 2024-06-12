@@ -15,6 +15,6 @@
 		"outDir": "./out",
 	},
 
-	"files": ["./src/extension.ts", "./src/htmlCommentsParser.ts"],
+	"files": ["./src/extension.ts", "src/htmlcommentsparser.ts"],
 	
 }

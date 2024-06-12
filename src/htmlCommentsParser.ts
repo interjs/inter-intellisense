@@ -1,5 +1,5 @@
 type arrayOfStrings = string[];
-interface parserInfoInterface {
+export interface parserInfoInterface {
   type: string;
   content: arrayOfStrings;
 }
