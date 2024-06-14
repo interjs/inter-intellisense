@@ -1,7 +1,7 @@
 import * as vscode from "vscode";
 import { commentsParser, parserInfoInterface } from "./htmlcommentsparser";
 
-const extensionVersion: string = "1.2.0";
+const extensionVersion: string = "1.1.0";
 const openTagRegExp = /<(:?[A-Z]+)>/gi;
 function runReferenceCompletionProvider(
   completionArray: vscode.CompletionItem[],
@@ -13,7 +13,7 @@ function runReferenceCompletionProvider(
         const item: vscode.CompletionItem = {
           label: refName,
           detail: "string|number",
-          documentation: `${refName} is a reference name`,
+          documentation: `${refName} is a reference's name`,
           kind: vscode.CompletionItemKind.Variable,
         };
         completionArray.push(item);
@@ -107,7 +107,7 @@ function isConditionalPropSuggestionRequest(
   cursorPosition: number
 ): boolean {
   let result: boolean = false;
-  const conditionalAttrRegExp = /_if=|_elseIf=|_ifNot=/g;
+  const conditionalAttrRegExp = /_if=|_elseIf=|_ifNot/g;
   const attrRegExp = /(:?[A-Z]+)=/i;
   let body: string[] = [];
   let breakTheLoop: boolean = false;
@@ -115,47 +115,23 @@ function isConditionalPropSuggestionRequest(
   for (let index = cursorPosition; index > -1; index--) {
     const token = textLine[index];
     if (/\s/.test(token)) {
-      if (attrRegExp.test(arrayToString(body))) breakTheLoop = true;
-      else if (conditionalAttrRegExp.test(arrayToString(body))) {
+      const stringifiedBody = arrayToString(body);
+      if (
+        attrRegExp.test(stringifiedBody) &&
+        conditionalAttrRegExp.test(stringifiedBody) == false
+      ) {
+        breakTheLoop = true;
+      } else if (attrRegExp.test(stringifiedBody)) {
         result = true;
         breakTheLoop = true;
       }
     }
+
     if (breakTheLoop) break;
     body.unshift(token);
   }
 
   return result;
-}
-
-function insertParserComments(
-  completionArray: vscode.CompletionItem[],
-  position: vscode.Position
-): vscode.CompletionItem[] {
-  const startPoint = new vscode.Position(position.line, position.character - 1);
-  const endPoint = new vscode.Position(position.line, position.character);
-
-  const refSuggestion: vscode.CompletionItem = {
-    label: "Reference identifier",
-    detail: "HTML comment",
-    documentation:
-      "It appends an HTML comments used by Internal parser for reference suggestions.",
-    kind: vscode.CompletionItemKind.Struct,
-    insertText: "<!--ref = -->",
-  };
-
-  const conditionalSuggestion: vscode.CompletionItem = {
-    label: "Conditional rendering identifier",
-    detail: "HTML comment",
-    documentation:
-      "It appends an HTML comments used by Internal parser for conditional properties suggestions.",
-    kind: vscode.CompletionItemKind.Struct,
-    insertText: "<!--conditional = -->",
-  };
-
-  completionArray.push(refSuggestion, conditionalSuggestion);
-
-  return completionArray;
 }
 
 class InterjsHTMLIntellisense implements vscode.CompletionItemProvider {
@@ -169,14 +145,10 @@ class InterjsHTMLIntellisense implements vscode.CompletionItemProvider {
     const completionInfo = new commentsParser().parse(htmlContent);
     const completionArray: vscode.CompletionItem[] = [];
     const triggerCharacter = context.triggerCharacter;
-
-    console.log(triggerCharacter);
+    const textLine = document.lineAt(position).text;
+    const cursorPosition = position.character;
     if (token.isCancellationRequested) return;
-    else if (triggerCharacter == "!")
-      insertParserComments(completionArray, position);
     else if (triggerCharacter == void 0) {
-      const textLine = document.lineAt(position).text;
-      const cursorPosition = position.character;
       const reference = isReferenceSuggestionRequest(textLine, cursorPosition);
       const conditionalProp = isConditionalPropSuggestionRequest(
         textLine,
@@ -198,7 +170,10 @@ class InterjsHTMLIntellisense implements vscode.CompletionItemProvider {
       if (canCheckCompletion)
         runReferenceCompletionProvider(completionArray, completionInfo);
     } else if (triggerCharacter == '"') {
-      const canCheckCompletion = isConditionalAttr(document, position);
+      const canCheckCompletion = isConditionalPropSuggestionRequest(
+        textLine,
+        cursorPosition
+      );
       if (canCheckCompletion)
         runConditionlRenderingCompletionProvider(
           completionArray,
@@ -224,7 +199,7 @@ export function activate(context: vscode.ExtensionContext) {
   const disp2 = vscode.languages.registerCompletionItemProvider(
     "html",
     new InterjsHTMLIntellisense(),
-    ...["{", '"', "!", '""']
+    ...["{", '"']
   );
 
   context.subscriptions.push(disp, disp2);

@@ -39,7 +39,10 @@ function parseTheComments(comments: arrayOfStrings): parserInfoInterface[] {
 
   for (const comment of comments) {
     const info = walkThroughTheComment(comment);
-    if (info.type && !types.has(info.type)) parserInfo.push(info);
+    if (info.type && !types.has(info.type)) {
+      parserInfo.push(info);
+      types.add(info.type);
+    }
   }
 
   return parserInfo;
