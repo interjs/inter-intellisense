@@ -1,12 +1,12 @@
 {
   "name": "inter-intellisense",
-  "description": "A vscode extension for Inter  HTML intellisense.",
+  "description": "A Vscode extension for Interjs  HTML intellisense.",
   "repository": {
 	  "type": "git",
 	  "url": "https://github.com/interjs/inter-intellisense.git"
   },
   "module": "esnext",
-  "version": "1.0.0",
+  "version": "1.1.0",
   "engines": {
     "vscode": "^1.57.1"
   },
