@@ -6,13 +6,18 @@
 	  "url": "https://github.com/interjs/inter-intellisense.git"
   },
   "module": "esnext",
-  "version": "1.1.0",
+  "version": "1.1.1",
   "engines": {
     "vscode": "^1.57.1"
   },
   "main": "./out/extension.js",
   "publisher": "Interjs",
   "displayName": "Interjs HTML intellisense",
+  "author": {
+    "name": "Denis Power",
+    "email": "denispower02@gmail.com",
+    "url": "https://github.com/DenisPower1"
+  },
   "license": "MIT",
   "icon": "./images/icon.png",
   "categories": [
@@ -22,6 +27,8 @@
   "activationEvents": [
     "onLanguage:html"
   ],
+  "keywords": ["Interjs", "Inter", "Inter.js", "Interjs HTML intellisense"],
+  "homepage": "https://interjs.github.io",
    "contributes": {
     "commands": [
       {

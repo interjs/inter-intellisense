@@ -1,8 +1,32 @@
 import * as vscode from "vscode";
 import { commentsParser, parserInfoInterface } from "./htmlcommentsparser";
 
-const extensionVersion: string = "1.1.0";
+const extensionVersion: string = "1.1.1";
 const openTagRegExp = /<(:?[A-Z]+)>/gi;
+
+function getHoveredToken(cursorPosition: number, lineText: string): string {
+  let body: string = "";
+
+  for (let index = cursorPosition; index > -1; index--) {
+    const token = lineText[index];
+
+    if (/\s|{|"/.test(token)) {
+      cursorPosition = index + 1;
+      break;
+    }
+  }
+
+  // something
+
+  for (let index = cursorPosition; lineText.length > index; index++) {
+    const token = lineText[index];
+
+    if (/\s|}|"/.test(token)) break;
+    else body += token;
+  }
+
+  return body;
+}
 function runReferenceCompletionProvider(
   completionArray: vscode.CompletionItem[],
   completionInfo: parserInfoInterface[]
@@ -154,9 +178,10 @@ class InterjsHTMLIntellisense implements vscode.CompletionItemProvider {
         textLine,
         cursorPosition
       );
-      if (reference)
+      const canCheckCompletion = !outOfCompletionArea(document, position);
+      if (reference && canCheckCompletion)
         runReferenceCompletionProvider(completionArray, completionInfo);
-      else if (conditionalProp)
+      else if (conditionalProp && canCheckCompletion)
         runConditionlRenderingCompletionProvider(
           completionArray,
           completionInfo
@@ -185,6 +210,76 @@ class InterjsHTMLIntellisense implements vscode.CompletionItemProvider {
   }
 }
 
+class onhoverInformation implements vscode.HoverProvider {
+  provideHover(
+    document: vscode.TextDocument,
+    positon: vscode.Position,
+    token: vscode.CancellationToken
+  ): vscode.ProviderResult<vscode.Hover> {
+    if (token.isCancellationRequested) return;
+
+    type setOfString = Set<string>;
+    const htmlContent = document.getText();
+    const parserInfo = new commentsParser().parse(htmlContent);
+    let ref: setOfString = new Set();
+    let conditional: setOfString = new Set();
+    const lineText = document.lineAt(positon).text;
+    const hoverContent = getHoveredToken(positon.character, lineText);
+    const refReg: RegExp = new RegExp(
+      `{(:?\\s+)*${hoverContent}(:?\\s+)*}`,
+      "g"
+    );
+    const conditionalRef: RegExp = new RegExp(
+      `_if="${hoverContent}"|_ifNot="${hoverContent}"|_elseIf="${hoverContent}"|_if='${hoverContent}'|_ifNot='${hoverContent}'|_elseIf='${hoverContent}'`
+    );
+    const isRef: boolean = refReg.test(lineText);
+    const isConditional: boolean = conditionalRef.test(
+      lineText.replace(/\s/g, "")
+    );
+    const noHoverInfo = outOfCompletionArea(document, positon);
+
+    for (const parser of parserInfo) {
+      if (parser.type == "ref") ref = new Set(parser.content);
+      else if (parser.type == "conditional")
+        conditional = new Set(parser.content);
+    }
+
+    let message: string = "";
+    const refDescription = `
+    ${hoverContent} is a registered reference's name and
+    its value will replace all { ${hoverContent} } under the same
+    root element.
+    
+   `;
+    const conditionalDescription = `
+    ${hoverContent} is a registered conditional property.
+    If ${hoverContent} is set to true, the element whose its
+    conditional property is ${hoverContent} will be rendered.
+    
+   `;
+
+    const nullDescription = `
+    ${hoverContent} is neither a reference's name nor a conditional property.
+    If it was supposed to be one of them, then it was not registered, register it like that:
+
+    <!--ref = ${hoverContent}--> For reference.
+    <!--conditional = ${hoverContent}--> For conditional property.
+   `;
+
+    if (!noHoverInfo) {
+      if (ref.has(hoverContent) && isRef) message = refDescription;
+      else if (conditional.has(hoverContent) && isConditional)
+        message = conditionalDescription;
+    }
+
+    const info: vscode.Hover = new vscode.Hover(
+      new vscode.MarkdownString(message)
+    );
+
+    return info;
+  }
+}
+
 export function activate(context: vscode.ExtensionContext) {
   vscode.window.showInformationMessage(`
 	Inter HTML intellisense is now activated, have a nice coding section!
@@ -192,7 +287,7 @@ export function activate(context: vscode.ExtensionContext) {
 
   const disp = vscode.commands.registerCommand("inter.version", () => {
     vscode.window.showInformationMessage(
-      `You're using version ${extensionVersion} of the extension.`
+      `You're using Interjs HTML intellisense version: ${extensionVersion} .`
     );
   });
 
@@ -202,5 +297,10 @@ export function activate(context: vscode.ExtensionContext) {
     ...["{", '"']
   );
 
-  context.subscriptions.push(disp, disp2);
+  const disp3 = vscode.languages.registerHoverProvider(
+    "html",
+    new onhoverInformation()
+  );
+
+  context.subscriptions.push(disp, disp2, disp3);
 }

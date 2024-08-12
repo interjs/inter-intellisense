@@ -6,12 +6,12 @@ To enable the extension to provide completions for references and conditional pr
 
 ```html
 <!--ref = reference1 reference2-->
-<!--conditional = conditional conditional-->
+<!--conditional = conditional1 conditional2-->
 ```
 
 You should replace the placeholders 'reference1' and 'reference2' with the actual references' names used in the document, and do the same for the conditional properties.
 
-`ref` and `conditional` are identifiers, the former is used for declaring the references's names, while the latter is used for declaring conditional properties' names.
+`ref` and `conditional` are identifiers, the former is used for declaring the references' names, while the latter is used for declaring conditional properties' names.
 
 When you run the following command in Vscode command palette, a message will pop up
 informing you of the current extension version:
