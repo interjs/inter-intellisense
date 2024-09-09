@@ -1,8 +1,100 @@
 import * as vscode from "vscode";
 import { commentsParser, parserInfoInterface } from "./htmlcommentsparser";
 
-const extensionVersion: string = "1.1.1";
+const extensionVersion: string = "1.2.0";
 const openTagRegExp = /<(:?[A-Z]+)>/gi;
+interface configI {
+  text: string;
+  start: number;
+  end: number;
+  justWarning?: boolean;
+  type: registeredT;
+}
+
+type registeredT = "ref" | "conditional";
+
+function getRegistered(
+  document: string,
+  type: registeredT
+): parserInfoInterface | undefined {
+  const registered = new commentsParser().parse(document);
+
+  let returnValue;
+  if (registered[0].type == type) returnValue = registered[0];
+  else if (registered[1].type == type) returnValue = registered[1];
+
+  return returnValue;
+}
+
+function findUnregisteredRef(
+  documentContent: string,
+  document: vscode.TextDocument
+): configI[] {
+  const refReg = /\{(:?\s+)*(:?[A-Z]+)(:?\s+)*\}/gi;
+  const allRefs = documentContent.match(refReg) || [];
+  const unregistered = [];
+  const registered = getRegistered(documentContent, "ref");
+
+  for (const ref of allRefs) {
+    const text = ref.replace("{", "").replace("}", "").trim();
+    const start = documentContent.indexOf(ref) + 1;
+    const position = document.positionAt(start);
+
+    const refSet = new Set(registered?.content);
+
+    if (refSet.has(text)) continue;
+    else if (outOfCompletionArea(document, position)) continue;
+
+    const config: configI = {
+      text: text,
+      start: start,
+      end: documentContent.indexOf(ref) + ref.length,
+      justWarning: true,
+      type: "ref",
+    };
+
+    unregistered.push(config);
+  }
+
+  return unregistered;
+}
+
+function findUnregisteredConditionalProps(documentContent: string): configI[] {
+  const attrsReg: RegExp =
+    /_if="(:?\s)*(:?[A-Z]+)(:?\s)*"|_elseIf="(:?\s)*(:?[A-Z]+)(:?\s)*"|_ifNot="(:?\s)*(:?[A-Z]+)(:?\s)*"|_else="(:?\s)*(:?[A-Z]+)(:?\s)*"/gi;
+  const allAttrs = documentContent.match(attrsReg) || [];
+  const unregistered = [];
+  const registered = getRegistered(documentContent, "conditional");
+
+  for (const attr of allAttrs) {
+    let theConditionalAttrsLength: number = 0;
+    let attrName: string = "";
+
+    const text = attr
+      .replace(/_if="|_elseIf="|_ifNot="|_else="/, (prop) => {
+        theConditionalAttrsLength = prop.length;
+        attrName = prop.replace('="', "");
+
+        return "";
+      })
+      .replace('"', "")
+      .trim();
+    const conditionalSet = new Set(registered?.content);
+    if (conditionalSet.has(text) && attrName !== "_else") continue;
+
+    const config: configI = {
+      text: text,
+      start: documentContent.indexOf(attr) + theConditionalAttrsLength,
+      end: documentContent.indexOf(attr) + attr.length,
+      justWarning: attrName == "_else",
+      type: "conditional",
+    };
+
+    unregistered.push(config);
+  }
+
+  return unregistered;
+}
 
 function getHoveredToken(cursorPosition: number, lineText: string): string {
   let body: string = "";
@@ -258,14 +350,6 @@ class onhoverInformation implements vscode.HoverProvider {
     
    `;
 
-    const nullDescription = `
-    ${hoverContent} is neither a reference's name nor a conditional property.
-    If it was supposed to be one of them, then it was not registered, register it like that:
-
-    <!--ref = ${hoverContent}--> For reference.
-    <!--conditional = ${hoverContent}--> For conditional property.
-   `;
-
     if (!noHoverInfo) {
       if (ref.has(hoverContent) && isRef) message = refDescription;
       else if (conditional.has(hoverContent) && isConditional)
@@ -281,6 +365,69 @@ class onhoverInformation implements vscode.HoverProvider {
 }
 
 export function activate(context: vscode.ExtensionContext) {
+  const diagnosticCollecction =
+    vscode.languages.createDiagnosticCollection("InterError");
+
+  function runDiagnosticLoop(
+    unregisteredCollection: configI[],
+    diagnostics: vscode.Diagnostic[],
+    toPosition: Function
+  ) {
+    for (const prop of unregisteredCollection) {
+      const start = toPosition(prop.start);
+      const end = toPosition(prop.end);
+      const diagnosticSeverity = vscode.DiagnosticSeverity;
+      const notRegisteredPropError = !prop.justWarning
+        ? `
+      ${prop.text} is not a registered conditional property. Register it like:
+      
+      <!--conditional = ${prop.text}-->
+      
+      `
+        : "Nothing is wrong here, but _else does not expect a value!";
+      const notRegisteredRefWarning = `
+      ${prop.text} is not a registered reference's name. Register it like:
+
+      <!--ref = ${prop.text}--->
+
+      `;
+
+      const diagnostic = new vscode.Diagnostic(
+        new vscode.Range(start, end),
+        prop.type == "ref" ? notRegisteredRefWarning : notRegisteredPropError,
+        prop.justWarning ? diagnosticSeverity.Warning : diagnosticSeverity.Error
+      );
+
+      diagnostics.push(diagnostic);
+    }
+  }
+
+  function runDiagnosticCode(document: vscode.TextDocument) {
+    const documentContent = document.getText();
+    const toPosition = (offset: number) => document.positionAt(offset);
+    const diagnostics: vscode.Diagnostic[] = [];
+    const unregisteredConditional =
+      findUnregisteredConditionalProps(documentContent);
+    const unregisteredRef = findUnregisteredRef(documentContent, document);
+
+    runDiagnosticLoop(unregisteredConditional, diagnostics, toPosition);
+    runDiagnosticLoop(unregisteredRef, diagnostics, toPosition);
+
+    diagnosticCollecction.set(document.uri, diagnostics);
+  }
+
+  vscode.workspace.onDidOpenTextDocument((document) => {
+    runDiagnosticCode(document);
+  });
+
+  vscode.workspace.onDidChangeTextDocument((event) => {
+    runDiagnosticCode(event.document);
+  });
+
+  vscode.window.onDidChangeActiveTextEditor(() => {
+    console.log("Here!");
+  });
+
   vscode.window.showInformationMessage(`
 	Inter HTML intellisense is now activated, have a nice coding section!
 	`);
@@ -302,5 +449,5 @@ export function activate(context: vscode.ExtensionContext) {
     new onhoverInformation()
   );
 
-  context.subscriptions.push(disp, disp2, disp3);
+  context.subscriptions.push(disp, disp2, disp3, diagnosticCollecction);
 }

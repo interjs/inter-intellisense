@@ -23,6 +23,7 @@ The extension will be activated as soon as an HTML file is opened. You can Downl
 from [Vscode market place](https://marketplace.visualstudio.com/items?itemName=interjs.inter-intellisense) or from [releases](https://github.com/interjs/inter-intellisense/releases) of this repository. Keep in mind that if you
 download the extension from the releases, you have to install it directly in vscode.
 
-Check out the video demo by clicking on: <a href="https://drive.google.com/file/d/1A7jAsGBVqXHis-RUyUvBnUiyvKarx4lp/view" target="_blank">video demo</a>.
+Check out the video demos by clicking on: <a href="https://drive.google.com/file/d/1A7jAsGBVqXHis-RUyUvBnUiyvKarx4lp/view" target="_blank">video demo 1</a>
+and <a href="https://drive.google.com/file/d/1MbJhBcWRnUbLmM5mSzi9fVcUXZBMZ7NL/view" target="_blank">video demo 2</a>.
 
 <img src="./images/sample.gif">
