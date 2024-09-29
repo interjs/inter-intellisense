@@ -6,7 +6,7 @@
 	  "url": "https://github.com/interjs/inter-intellisense.git"
   },
   "module": "esnext",
-  "version": "1.2.0",
+  "version": "1.2.1",
   "engines": {
     "vscode": "^1.57.1"
   },

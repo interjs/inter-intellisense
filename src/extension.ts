@@ -1,7 +1,7 @@
 import * as vscode from "vscode";
 import { commentsParser, parserInfoInterface } from "./htmlcommentsparser";
 
-const extensionVersion: string = "1.2.0";
+const extensionVersion: string = "1.2.1";
 const openTagRegExp = /<(:?[A-Z]+)>/gi;
 interface configI {
   text: string;
@@ -18,29 +18,32 @@ function getRegistered(
   type: registeredT
 ): parserInfoInterface | undefined {
   const registered = new commentsParser().parse(document);
+  
 
   let returnValue;
-  if (registered[0].type == type) returnValue = registered[0];
-  else if (registered[1].type == type) returnValue = registered[1];
-
+  if (registered[0]?.type == type) returnValue = registered[0];
+  else if (registered[1]?.type == type) returnValue = registered[1];
   return returnValue;
 }
 
 function findUnregisteredRef(
   documentContent: string,
   document: vscode.TextDocument
-): configI[] {
+): configI[] | undefined {
   const refReg = /\{(:?\s+)*(:?[A-Z]+)(:?\s+)*\}/gi;
   const allRefs = documentContent.match(refReg) || [];
   const unregistered = [];
   const registered = getRegistered(documentContent, "ref");
 
+  if (!registered) return;
+
   for (const ref of allRefs) {
     const text = ref.replace("{", "").replace("}", "").trim();
     const start = documentContent.indexOf(ref) + 1;
     const position = document.positionAt(start);
+    
 
-    const refSet = new Set(registered?.content);
+    const refSet = new Set(registered ? registered.content : []);
 
     if (refSet.has(text)) continue;
     else if (outOfCompletionArea(document, position)) continue;
@@ -59,12 +62,14 @@ function findUnregisteredRef(
   return unregistered;
 }
 
-function findUnregisteredConditionalProps(documentContent: string): configI[] {
+function findUnregisteredConditionalProps(documentContent: string): configI[] | undefined {
   const attrsReg: RegExp =
     /_if="(:?\s)*(:?[A-Z]+)(:?\s)*"|_elseIf="(:?\s)*(:?[A-Z]+)(:?\s)*"|_ifNot="(:?\s)*(:?[A-Z]+)(:?\s)*"|_else="(:?\s)*(:?[A-Z]+)(:?\s)*"/gi;
   const allAttrs = documentContent.match(attrsReg) || [];
   const unregistered = [];
   const registered = getRegistered(documentContent, "conditional");
+
+  if (!registered) return;
 
   for (const attr of allAttrs) {
     let theConditionalAttrsLength: number = 0;
@@ -410,8 +415,8 @@ export function activate(context: vscode.ExtensionContext) {
       findUnregisteredConditionalProps(documentContent);
     const unregisteredRef = findUnregisteredRef(documentContent, document);
 
-    runDiagnosticLoop(unregisteredConditional, diagnostics, toPosition);
-    runDiagnosticLoop(unregisteredRef, diagnostics, toPosition);
+    if (unregisteredConditional) runDiagnosticLoop(unregisteredConditional, diagnostics, toPosition);
+    if (unregisteredRef) runDiagnosticLoop(unregisteredRef, diagnostics, toPosition);
 
     diagnosticCollecction.set(document.uri, diagnostics);
   }
