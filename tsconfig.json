@@ -12,9 +12,17 @@
 		"strictFunctionTypes": true,
 		"strictPropertyInitialization": true,
 		"strictNullChecks": true,
+		"noUnusedLocals": true,
 		"outDir": "./out",
 	},
 
-	"files": ["./src/extension.ts", "src/htmlcommentsparser.ts"],
+	"files": [
+		"src/extension.ts",
+	    "src/htmlcommentsparser.ts",
+		"src/errors.ts",
+		"src/hop/index.ts",
+		"src/hop/helpers.ts",
+		"src/hop/types.ts"
+		],
 	
 }

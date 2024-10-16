@@ -1,14 +1,17 @@
 import * as vscode from "vscode";
 import { commentsParser, parserInfoInterface } from "./htmlcommentsparser";
+import { parseHTML } from "./hop/index"
+import { runHasNoreThanOneConditionalAttrsError, runIllegalValueError, runInvalidConditionalAttrNameError, runInvalidElseValueWarning, runUnregisteredConditionalPropError, runUnregisteredRefName } from "./errors"
 
-const extensionVersion: string = "1.2.1";
+const extensionVersion: string = "1.3.0";
 const openTagRegExp = /<(:?[A-Z]+)>/gi;
 interface configI {
-  text: string;
+
   start: number;
   end: number;
   justWarning?: boolean;
   type: registeredT;
+  errorMessage: string
 }
 
 type registeredT = "ref" | "conditional";
@@ -18,7 +21,7 @@ function getRegistered(
   type: registeredT
 ): parserInfoInterface | undefined {
   const registered = new commentsParser().parse(document);
-  
+
 
   let returnValue;
   if (registered[0]?.type == type) returnValue = registered[0];
@@ -41,7 +44,7 @@ function findUnregisteredRef(
     const text = ref.replace("{", "").replace("}", "").trim();
     const start = documentContent.indexOf(ref) + 1;
     const position = document.positionAt(start);
-    
+
 
     const refSet = new Set(registered ? registered.content : []);
 
@@ -49,11 +52,12 @@ function findUnregisteredRef(
     else if (outOfCompletionArea(document, position)) continue;
 
     const config: configI = {
-      text: text,
+
       start: start,
       end: documentContent.indexOf(ref) + ref.length,
       justWarning: true,
       type: "ref",
+      errorMessage: runUnregisteredRefName(text)
     };
 
     unregistered.push(config);
@@ -62,44 +66,92 @@ function findUnregisteredRef(
   return unregistered;
 }
 
-function findUnregisteredConditionalProps(documentContent: string): configI[] | undefined {
-  const attrsReg: RegExp =
-    /_if="(:?\s)*(:?[A-Z]+)(:?\s)*"|_elseIf="(:?\s)*(:?[A-Z]+)(:?\s)*"|_ifNot="(:?\s)*(:?[A-Z]+)(:?\s)*"|_else="(:?\s)*(:?[A-Z]+)(:?\s)*"/gi;
-  const allAttrs = documentContent.match(attrsReg) || [];
-  const unregistered = [];
-  const registered = getRegistered(documentContent, "conditional");
 
-  if (!registered) return;
 
-  for (const attr of allAttrs) {
-    let theConditionalAttrsLength: number = 0;
-    let attrName: string = "";
+function generateConditionalConfig(start: number, end: number, error: string, warning?: boolean): configI {
 
-    const text = attr
-      .replace(/_if="|_elseIf="|_ifNot="|_else="/, (prop) => {
-        theConditionalAttrsLength = prop.length;
-        attrName = prop.replace('="', "");
-
-        return "";
-      })
-      .replace('"', "")
-      .trim();
-    const conditionalSet = new Set(registered?.content);
-    if (conditionalSet.has(text) && attrName !== "_else") continue;
-
-    const config: configI = {
-      text: text,
-      start: documentContent.indexOf(attr) + theConditionalAttrsLength,
-      end: documentContent.indexOf(attr) + attr.length,
-      justWarning: attrName == "_else",
-      type: "conditional",
-    };
-
-    unregistered.push(config);
+  return {
+    type: "conditional",
+    start: start,
+    end: end,
+    errorMessage: error,
+    justWarning: warning
   }
 
-  return unregistered;
 }
+
+function findErrorInConditionalRendering(documentContent: string): configI[] {
+
+  const domLikeObject = parseHTML(documentContent);
+  const registeredC = getRegistered(documentContent, "conditional")
+  const conditionalProps = new Set(registeredC ? registeredC.content : []);
+  const conditionalAttrsNames = new Set(["_if", "_elseIf", "_else", "_ifNot"])
+  const errorsCollection = []
+
+  for (const element of domLikeObject) {
+
+    let conditionalAttrsCounter = 0;
+
+
+    if (Array.isArray(element.attrs) && element.attrs.length > 0) {
+
+      if (conditionalProps.size == 0) break;
+
+      for (const attr of element.attrs) {
+
+        const { name, nameStart, nameEnd, value, valueSart, valueEnd } = attr
+        const { tag, tagStart, tagEnd } = element;
+        const refReg = /\{(:?\s+)*(:?[A-Z]+)(:?\s+)*\}/gi;
+
+        if (conditionalAttrsNames.has(name)) {
+          conditionalAttrsCounter++;
+
+          if (conditionalAttrsCounter > 1) {
+            errorsCollection.push(
+              generateConditionalConfig(tagStart, tagEnd, runHasNoreThanOneConditionalAttrsError(tag))
+            )
+            break
+          }
+          else if (name !== "_else" && refReg.test(value)) {
+            const refName = value.replace("{", "").replace("}", "").trim();
+            errorsCollection.push(generateConditionalConfig(valueSart, valueEnd, runIllegalValueError(refName)));
+            break;
+
+          }
+          else if (name == "_else" && value.trim().length > 0) {
+            errorsCollection.push(generateConditionalConfig(valueSart, valueEnd, runInvalidElseValueWarning(value), true));
+            break;
+          }
+          else if (name !== "_else" && value.trim().length == 0) {
+            errorsCollection.push(generateConditionalConfig(nameStart, nameEnd, runInvalidConditionalAttrNameError(name)));
+            break;
+          }
+          else if (!conditionalProps.has(value)) {
+            errorsCollection.push(generateConditionalConfig(valueSart, valueEnd, runUnregisteredConditionalPropError(value)));
+            break
+
+          }
+
+        }
+
+
+
+      }
+
+    }
+
+
+
+
+  }
+
+  return errorsCollection;
+
+
+
+
+}
+
 
 function getHoveredToken(cursorPosition: number, lineText: string): string {
   let body: string = "";
@@ -183,21 +235,6 @@ function outOfCompletionArea(
   return noCompletion;
 }
 
-function isConditionalAttr(
-  document: vscode.TextDocument,
-  position: vscode.Position
-): boolean {
-  const lineText = document.lineAt(position).text;
-  const conditionalAttrRegExp = /_if=""|_elseIf=""|_ifNot=""/g;
-  let result: boolean = false;
-  const tagWithAttrsRegExp = /<(?:[\s\S]+)>/g;
-
-  if (tagWithAttrsRegExp.test(lineText)) {
-    if (conditionalAttrRegExp.test(lineText)) result = true;
-  }
-
-  return result;
-}
 
 function isReferenceSuggestionRequest(
   textLine: string,
@@ -382,24 +419,11 @@ export function activate(context: vscode.ExtensionContext) {
       const start = toPosition(prop.start);
       const end = toPosition(prop.end);
       const diagnosticSeverity = vscode.DiagnosticSeverity;
-      const notRegisteredPropError = !prop.justWarning
-        ? `
-      ${prop.text} is not a registered conditional property. Register it like:
-      
-      <!--conditional = ${prop.text}-->
-      
-      `
-        : "Nothing is wrong here, but _else does not expect a value!";
-      const notRegisteredRefWarning = `
-      ${prop.text} is not a registered reference's name. Register it like:
 
-      <!--ref = ${prop.text}--->
-
-      `;
 
       const diagnostic = new vscode.Diagnostic(
         new vscode.Range(start, end),
-        prop.type == "ref" ? notRegisteredRefWarning : notRegisteredPropError,
+        prop.errorMessage,
         prop.justWarning ? diagnosticSeverity.Warning : diagnosticSeverity.Error
       );
 
@@ -411,8 +435,7 @@ export function activate(context: vscode.ExtensionContext) {
     const documentContent = document.getText();
     const toPosition = (offset: number) => document.positionAt(offset);
     const diagnostics: vscode.Diagnostic[] = [];
-    const unregisteredConditional =
-      findUnregisteredConditionalProps(documentContent);
+    const unregisteredConditional = findErrorInConditionalRendering(documentContent);
     const unregisteredRef = findUnregisteredRef(documentContent, document);
 
     if (unregisteredConditional) runDiagnosticLoop(unregisteredConditional, diagnostics, toPosition);
