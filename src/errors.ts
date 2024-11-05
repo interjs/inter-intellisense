@@ -41,3 +41,9 @@ export function runUnregisteredRefName(refName: string): string {
          `
 
 }
+
+export function runInvalidTagForConditionalRendering(tag: string): string {
+
+    return `${tag} is a non-visual element, do not use the conditional attributes on them.`
+
+}

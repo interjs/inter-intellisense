@@ -1,9 +1,9 @@
 import * as vscode from "vscode";
 import { commentsParser, parserInfoInterface } from "./htmlcommentsparser";
 import { parseHTML } from "./hop/index"
-import { runHasNoreThanOneConditionalAttrsError, runIllegalValueError, runInvalidConditionalAttrNameError, runInvalidElseValueWarning, runUnregisteredConditionalPropError, runUnregisteredRefName } from "./errors"
+import { runHasNoreThanOneConditionalAttrsError, runIllegalValueError, runInvalidConditionalAttrNameError, runInvalidElseValueWarning, runInvalidTagForConditionalRendering, runUnregisteredConditionalPropError, runUnregisteredRefName } from "./errors"
 
-const extensionVersion: string = "1.3.0";
+const extensionVersion: string = "1.3.1";
 const openTagRegExp = /<(:?[A-Z]+)>/gi;
 interface configI {
 
@@ -102,11 +102,25 @@ function findErrorInConditionalRendering(documentContent: string): configI[] {
         const { name, nameStart, nameEnd, value, valueSart, valueEnd } = attr
         const { tag, tagStart, tagEnd } = element;
         const refReg = /\{(:?\s+)*(:?[A-Z]+)(:?\s+)*\}/gi;
+        //The content of these tags is non-visual
+        //So, why on earth someone would use the conditional rendering attributes on them?
+        //If that is the case we must warn the developer.
+        const nonVisualTags: Set<string> = new Set(["script", "style"]);
+
 
         if (conditionalAttrsNames.has(name)) {
           conditionalAttrsCounter++;
 
-          if (conditionalAttrsCounter > 1) {
+          if (nonVisualTags.has(tag)) {
+
+            errorsCollection.push(
+              generateConditionalConfig(tagStart, tagEnd, runInvalidTagForConditionalRendering(tag))
+            )
+            break;
+
+          }
+
+          else if (conditionalAttrsCounter > 1) {
             errorsCollection.push(
               generateConditionalConfig(tagStart, tagEnd, runHasNoreThanOneConditionalAttrsError(tag))
             )
